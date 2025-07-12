@@ -1,22 +1,113 @@
-<!--This component should be reusable so as to take in some parameters and
-    then render a viewable post list in ordering based on parameters given to it.
-    As a result, this component must do several things:
-      - get a stored list of posts and that post data from somewhere
-      - store the summary of that post in another structure to be used elsewhere
-      - iterate over that list of post and display post
-      - if hovering over a blog post, get that blog posts info and display a summary
--->
+<template>
+  <div class="post-list-container">
+    <div class="post-list">
+      <div
+        v-for="post in posts"
+        :key="post.slug"
+        class="post-list-item"
+        @mouseenter="hoveredPost = post"
+        @mouseleave="hoveredPost = null"
+      >
+        {{ post.title }}
+      </div>
+    </div>
+    <div class="post-summary-panel-area">
+      <transition name="fade">
+        <div v-if="hoveredPost" class="post-summary-panel">
+          <strong>Summary</strong>
+          <div>{{ hoveredPost.summary }}</div>
+        </div>
+      </transition>
+    </div>
+  </div>
+</template>
 
 <script lang="ts">
+import { ref, onMounted } from 'vue'
+import type { Ref } from 'vue'
 
-defineProps({
-  ordering: {
-    type: String,
-    default: 'date'
-  },
-  ascending: {
-    type: Boolean,
-    default: true
+interface PostMeta {
+  title: string
+  summary: string
+  date: string
+  slug: string
+  path: string
+}
+
+export default {
+  name: 'PostList',
+  setup() {
+    const posts: Ref<PostMeta[]> = ref([])
+    const hoveredPost: Ref<PostMeta | null> = ref(null)
+
+    onMounted(async () => {
+      const res = await fetch('/api/blog-posts')
+      posts.value = await res.json()
+    })
+
+    return { posts, hoveredPost }
   }
-})
+}
 </script>
+
+<style scoped>
+.post-list-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.post-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  flex: 1;
+}
+
+.post-list-item {
+  background: var(--color-background-soft);
+  border: 2px solid var(--color-border);
+  border-radius: 20px;
+  padding: 1.2rem 2rem;
+  font-size: 1.2rem;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background 0.2s, border 0.2s;
+}
+
+.post-list-item:hover {
+  background: var(--color-background-mute);
+  border-color: var(--color-border-hover);
+}
+
+.post-summary-panel-area {
+  min-width: 320px;
+  max-width: 350px;
+  height: 120px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  box-sizing: border-box;
+}
+
+.post-summary-panel {
+  width: 100%;
+  background: var(--color-background-soft);
+  border: 2px solid var(--color-border);
+  border-radius: 20px;
+  padding: 1.2rem 2rem;
+  font-size: 1rem;
+  color: var(--color-text);
+  box-sizing: border-box;
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.5s;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+</style>

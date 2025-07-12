@@ -1,32 +1,53 @@
 import { Octokit } from 'octokit';
 import express from 'express';
-import dotenv from 'dotenv';
+import matter from 'gray-matter';
 
-dotenv.config();
 const routes = express.Router();
 
-const octokit = new Octokit({
-    auth: process.env.GITHUB_API_KEY
-});
+const octokit = new Octokit();
 
+// Helper to get post metadata from a markdown file in the repo
+async function getPostMeta(file) {
+    const { data: fileContent } = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
+        owner: 'mcradcliffe2490',
+        repo: 'blog-posts',
+        path: file.path,
+        headers: {
+            'X-GitHub-Api-Version': '2022-11-28'
+        }
+    });
+    // fileContent.content is base64 encoded
+    const content = Buffer.from(fileContent.content, 'base64').toString('utf-8');
+    const { data: frontmatter } = matter(content);
+    return {
+        title: frontmatter.title || file.name.replace(/\.md$/, ''),
+        summary: frontmatter.summary || '',
+        date: frontmatter.date || '',
+        slug: file.name.replace(/\.md$/, ''),
+        path: file.path
+    };
+}
 
 routes.get('/', async (req, res) => {
     try {
+        // Get all files in Posts directory
         const repoInfo = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
             owner: 'mcradcliffe2490',
             repo: 'blog-posts',
-            path: "Posts",
+            path: 'Posts',
             headers: {
-                'X-GitHub-Api-Version': '2022-11-28',
-                'Authorization': `Bearer ${process.env.GITHUB_API_KEY}`
+                'X-GitHub-Api-Version': '2022-11-28'
             }
         });
-        res.send(repoInfo);
+        // Only process markdown files
+        const mdFiles = repoInfo.data.filter(f => f.name.endsWith('.md'));
+        // Fetch and parse metadata for each file
+        const posts = await Promise.all(mdFiles.map(getPostMeta));
+        res.json(posts);
     } catch (error) {
         console.log('Error details:', {
             status: error.status,
-            message: error.message,
-            token: process.env.GITHUB_API_KEY ? 'Token present' : 'Token missing'
+            message: error.message
         });
         res.status(error.status || 500).send(error.message);
     }
