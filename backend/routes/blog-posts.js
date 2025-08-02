@@ -69,5 +69,29 @@ routes.get('/religion', (req, res) => {
     // params: sortBy, ascending
 });
 
+routes.get('/:slug', async (req, res) => {
+    try {
+        const slug = req.params.slug;
+        const filePath = `Posts/${slug}.md`;
+        const { data: fileContent } = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
+            owner: 'mcradcliffe2490',
+            repo: 'blog-posts',
+            path: filePath,
+            headers: {
+                'X-GitHub-Api-Version': '2022-11-28'
+            }
+        });
+        const content = Buffer.from(fileContent.content, 'base64').toString('utf-8');
+        const { data: frontmatter, content: markdown } = matter(content);
+        res.json({
+            ...frontmatter,
+            slug,
+            markdown
+        });
+    } catch (error) {
+        res.status(error.status || 500).send(error.message);
+    }
+});
+
 export default routes;
 

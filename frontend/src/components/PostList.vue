@@ -1,15 +1,18 @@
 <template>
   <div class="post-list-container">
     <div class="post-list">
-      <div
+      <router-link
         v-for="post in posts"
         :key="post.slug"
-        class="post-list-item"
-        @mouseenter="hoveredPost = post"
-        @mouseleave="hoveredPost = null"
+        :to="`/post/${post.slug}`"
+        class="post-list-item-link"
+        @mouseenter.native="hoveredPost = post"
+        @mouseleave.native="hoveredPost = null"
       >
-        {{ post.title }}
-      </div>
+        <div class="post-list-item">
+          <div class="post-title">{{ post.title }}</div>
+        </div>
+      </router-link>
     </div>
     <div class="post-summary-panel-area">
       <transition name="fade">
@@ -67,6 +70,12 @@ export default {
   flex: 1;
 }
 
+.post-list-item-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
 .post-list-item {
   background: var(--color-background-soft);
   border: 2px solid var(--color-border);
@@ -76,11 +85,18 @@ export default {
   color: var(--color-text);
   cursor: pointer;
   transition: background 0.2s, border 0.2s;
+  display: flex;
+  align-items: center;
 }
 
-.post-list-item:hover {
+.post-list-item-link:hover .post-list-item {
   background: var(--color-background-mute);
   border-color: var(--color-border-hover);
+}
+
+.post-title {
+  font-size: 1.2rem;
+  font-weight: 500;
 }
 
 .post-summary-panel-area {
