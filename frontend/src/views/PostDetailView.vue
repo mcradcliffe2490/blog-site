@@ -48,7 +48,6 @@ export default {
           <span v-if="post.date">{{ post.date }}</span>
           <span v-if="post.summary">&mdash; {{ post.summary }}</span>
         </div>
-        <h1 class="post-title">{{ post.title }}</h1>
         <div class="post-content" v-html="html"></div>
       </div>
     </transition>

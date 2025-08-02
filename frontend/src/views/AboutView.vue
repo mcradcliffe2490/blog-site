@@ -20,6 +20,12 @@
             This blog is a creative outlet for my many passions.
             I hope you enjoy reading it and thanks for coming to my little corner of the internet.
           </p>
+          <p>
+            You'll notice that there are no pictures in my blog posts. That's intentional. 
+            The companion stories on Medium and other platforms have pictures if you're looking for that,
+            but I like to keep the focus on the words here. Plus the site has this whole minimalist vibe going on,
+            I'm in my performative era. Or maybe I was tool lazy to code for adding the pictures. You'll never know. 
+          </p>
         </div>
       </div>
       <div class="profile-section">

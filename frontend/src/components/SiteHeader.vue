@@ -2,6 +2,7 @@
   <div class="header-container">
     <span class="name">Mycale C. Radcliffe</span>
     <div class="pages-list">
+      <router-link to="/" class="page-item">Home</router-link>
       <router-link to="/about-me" class="page-item">About Me</router-link>
       <router-link to="/topics" class="page-item">Topics</router-link>
       <router-link to="/post-list" class="page-item">Post List</router-link>
