@@ -10,119 +10,105 @@ const octokit = new Octokit({
     auth: process.env.GITHUB_TOKEN
 });
 
-// Cache for metadata
-let metadataCache = null;
+const REPO_OWNER = 'mcradcliffe2490';
+const REPO_NAME = 'blog-posts';
+const GITHUB_HEADERS = { 'X-GitHub-Api-Version': '2022-11-28' };
 
-// Helper to get metadata from metadata.json
-async function getMetadata() {
-    if (metadataCache) return metadataCache;
-    
-    try {
-        const { data: fileContent } = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
-            owner: 'mcradcliffe2490',
-            repo: 'blog-posts',
-            path: 'metadata.json',
-            headers: {
-                'X-GitHub-Api-Version': '2022-11-28'
-            }
-        });
-        const content = Buffer.from(fileContent.content, 'base64').toString('utf-8');
-        metadataCache = JSON.parse(content);
-        return metadataCache;
-    } catch (error) {
-        console.error('Error fetching metadata.json:', error);
-        return {};
-    }
+// Helper to fetch a file's content from the blog-posts repo
+async function fetchFileContent(path) {
+    const { data } = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
+        owner: REPO_OWNER,
+        repo: REPO_NAME,
+        path,
+        headers: GITHUB_HEADERS
+    });
+    return Buffer.from(data.content, 'base64').toString('utf-8');
 }
 
-// Helper to get post metadata from a markdown file in the repo
+// Helper to get post metadata by parsing frontmatter from the markdown file
 async function getPostMeta(file) {
     const slug = file.name.replace(/\.md$/, '');
-    const metadata = await getMetadata();
-    const postMeta = metadata[slug] || {};
-    
-    console.log(`Post: ${slug}`);
-    console.log(`  - postMeta.title: "${postMeta.title}"`);
-    console.log(`  - final title: "${postMeta.title || slug}"`);
-    console.log(`  - metadata keys:`, Object.keys(metadata));
-    
+    const raw = await fetchFileContent(file.path);
+    const { data: frontmatter } = matter(raw);
+
     return {
-        title: postMeta.title || slug,
-        summary: postMeta.summary || '',
-        date: postMeta.date || '',
-        category: postMeta.category || '',
-        slug: slug,
+        title: frontmatter.title || slug,
+        summary: frontmatter.summary || '',
+        date: frontmatter.date || '',
+        category: frontmatter.category || '',
+        slug,
         path: file.path
     };
 }
 
+// List all posts
 routes.get('/', async (req, res) => {
     try {
-        // Get all files in Posts directory
         const repoInfo = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
-            owner: 'mcradcliffe2490',
-            repo: 'blog-posts',
+            owner: REPO_OWNER,
+            repo: REPO_NAME,
             path: 'Posts',
-            headers: {
-                'X-GitHub-Api-Version': '2022-11-28'
-            }
+            headers: GITHUB_HEADERS
         });
-        // Only process markdown files
         const mdFiles = repoInfo.data.filter(f => f.name.endsWith('.md'));
-        // Fetch and parse metadata for each file
         const posts = await Promise.all(mdFiles.map(getPostMeta));
         res.json(posts);
     } catch (error) {
-        console.log('Error details:', {
-            status: error.status,
-            message: error.message
-        });
+        console.error('Error fetching posts:', error.message);
         res.status(error.status || 500).send(error.message);
     }
 });
 
-routes.get('/random', (req, res) => {
-
+// Random post - redirects to a random post slug
+routes.get('/random', async (req, res) => {
+    try {
+        const repoInfo = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
+            owner: REPO_OWNER,
+            repo: REPO_NAME,
+            path: 'Posts',
+            headers: GITHUB_HEADERS
+        });
+        const mdFiles = repoInfo.data.filter(f => f.name.endsWith('.md'));
+        if (mdFiles.length === 0) return res.status(404).json({ error: 'No posts found' });
+        const randomFile = mdFiles[Math.floor(Math.random() * mdFiles.length)];
+        const slug = randomFile.name.replace(/\.md$/, '');
+        res.json({ slug });
+    } catch (error) {
+        res.status(error.status || 500).send(error.message);
+    }
 });
 
-routes.get('/philosophy', (req, res) => { 
-    // params: sortBy, ascending
+// Filter posts by category
+routes.get('/category/:category', async (req, res) => {
+    try {
+        const category = req.params.category.toLowerCase();
+        const repoInfo = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
+            owner: REPO_OWNER,
+            repo: REPO_NAME,
+            path: 'Posts',
+            headers: GITHUB_HEADERS
+        });
+        const mdFiles = repoInfo.data.filter(f => f.name.endsWith('.md'));
+        const allPosts = await Promise.all(mdFiles.map(getPostMeta));
+        const filtered = allPosts.filter(p => p.category.toLowerCase() === category);
+        res.json(filtered);
+    } catch (error) {
+        res.status(error.status || 500).send(error.message);
+    }
 });
 
-routes.get('/teaching', (req, res) => {
-    // params: sortBy, ascending
-});
-
-routes.get('/religion', (req, res) => {
-    // params: sortBy, ascending
-});
-
+// Get a single post by slug
 routes.get('/:slug', async (req, res) => {
     try {
         const slug = req.params.slug;
-        const filePath = `Posts/${slug}.md`;
-        
-        // Get the markdown content
-        const { data: fileContent } = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
-            owner: 'mcradcliffe2490',
-            repo: 'blog-posts',
-            path: filePath,
-            headers: {
-                'X-GitHub-Api-Version': '2022-11-28'
-            }
-        });
-        const content = Buffer.from(fileContent.content, 'base64').toString('utf-8');
-        const { content: markdown } = matter(content);
-        
-        // Get metadata from metadata.json
-        const metadata = await getMetadata();
-        const postMeta = metadata[slug] || {};
-        
+        const raw = await fetchFileContent(`Posts/${slug}.md`);
+        const { data: frontmatter, content: markdown } = matter(raw);
+
         res.json({
-            title: postMeta.title || slug,
-            summary: postMeta.summary || '',
-            date: postMeta.date || '',
-            category: postMeta.category || '',
+            title: frontmatter.title || slug,
+            summary: frontmatter.summary || '',
+            date: frontmatter.date || '',
+            category: frontmatter.category || '',
             slug,
             markdown
         });

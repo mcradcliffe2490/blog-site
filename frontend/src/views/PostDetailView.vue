@@ -1,5 +1,5 @@
 <script lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
 
@@ -13,8 +13,31 @@ export default {
     const loading = ref(true)
     const error = ref('')
     const showContent = ref(false)
+    const giscusContainer = ref<HTMLElement | null>(null)
 
     const goBack = () => router.back()
+
+    function loadGiscus() {
+      nextTick(() => {
+        if (!giscusContainer.value) return
+        const script = document.createElement('script')
+        script.src = 'https://giscus.app/client.js'
+        script.setAttribute('data-repo', 'mcradcliffe2490/blog-site')
+        script.setAttribute('data-repo-id', 'R_kgDONuqbBA')
+        script.setAttribute('data-category', 'Blog Comments')
+        script.setAttribute('data-category-id', 'DIC_kwDONuqbBM4C4_nV')
+        script.setAttribute('data-mapping', 'pathname')
+        script.setAttribute('data-strict', '0')
+        script.setAttribute('data-reactions-enabled', '1')
+        script.setAttribute('data-emit-metadata', '0')
+        script.setAttribute('data-input-position', 'bottom')
+        script.setAttribute('data-theme', 'preferred_color_scheme')
+        script.setAttribute('data-lang', 'en')
+        script.setAttribute('crossorigin', 'anonymous')
+        script.async = true
+        giscusContainer.value.appendChild(script)
+      })
+    }
 
     onMounted(async () => {
       try {
@@ -22,7 +45,10 @@ export default {
         if (!res.ok) throw new Error('Post not found')
         post.value = await res.json()
         html.value = marked.parse(post.value.markdown || '') as string
-        setTimeout(() => { showContent.value = true }, 100) // fade in
+        setTimeout(() => {
+          showContent.value = true
+          loadGiscus()
+        }, 100)
       } catch (e: any) {
         error.value = e.message
       } finally {
@@ -30,7 +56,7 @@ export default {
       }
     })
 
-    return { post, html, loading, error, showContent, goBack }
+    return { post, html, loading, error, showContent, goBack, giscusContainer }
   }
 }
 </script>
@@ -49,6 +75,10 @@ export default {
           <span v-if="post.summary">&mdash; {{ post.summary }}</span>
         </div>
         <div class="post-content" v-html="html"></div>
+        <div class="comments-section">
+          <h2 class="comments-heading">Comments</h2>
+          <div ref="giscusContainer" class="giscus"></div>
+        </div>
       </div>
     </transition>
   </main>
@@ -146,6 +176,18 @@ export default {
   transition: color 0.2s;
 }
 .post-content :deep(a):hover {
+  color: var(--color-heading);
+}
+.comments-section {
+  width: 100%;
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--color-border);
+}
+.comments-heading {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
   color: var(--color-heading);
 }
 @media (max-width: 800px) {
