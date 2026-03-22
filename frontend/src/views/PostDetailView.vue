@@ -2,6 +2,7 @@
 import { ref, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
+import { fetchPost } from '../services/github'
 
 export default {
   name: 'PostDetailView',
@@ -41,9 +42,7 @@ export default {
 
     onMounted(async () => {
       try {
-        const res = await fetch(`/api/blog-posts/${route.params.slug}`)
-        if (!res.ok) throw new Error('Post not found')
-        post.value = await res.json()
+        post.value = await fetchPost(route.params.slug as string)
         html.value = marked.parse(post.value.markdown || '') as string
         setTimeout(() => {
           showContent.value = true

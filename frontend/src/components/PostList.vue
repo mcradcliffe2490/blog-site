@@ -28,6 +28,7 @@
 <script lang="ts">
 import { ref, onMounted } from 'vue'
 import type { Ref } from 'vue'
+import { fetchAllPosts } from '../services/github'
 
 interface PostMeta {
   title: string
@@ -44,8 +45,7 @@ export default {
     const hoveredPost: Ref<PostMeta | null> = ref(null)
 
     onMounted(async () => {
-      const res = await fetch('/api/blog-posts')
-      posts.value = await res.json()
+      posts.value = await fetchAllPosts()
     })
 
     return { posts, hoveredPost }
