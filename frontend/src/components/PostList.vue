@@ -6,8 +6,8 @@
         :key="post.slug"
         :to="`/post/${post.slug}`"
         class="post-list-item-link"
-        @mouseenter.native="hoveredPost = post"
-        @mouseleave.native="hoveredPost = null"
+        @mouseenter="hoveredPost = post"
+        @mouseleave="hoveredPost = null"
       >
         <div class="post-list-item">
           <div class="post-title">{{ post.title }}</div>
@@ -16,7 +16,7 @@
     </div>
     <div class="post-summary-panel-area">
       <transition name="fade">
-        <div v-if="hoveredPost" class="post-summary-panel">
+        <div v-if="hoveredPost?.summary" class="post-summary-panel">
           <strong>Summary</strong>
           <div>{{ hoveredPost.summary }}</div>
         </div>
@@ -26,26 +26,21 @@
 </template>
 
 <script lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import type { Ref } from 'vue'
-
-interface PostMeta {
-  title: string
-  summary: string
-  date: string
-  slug: string
-  path: string
-}
+import { getPosts } from '../content/posts'
+import type { Post } from '../content/posts'
 
 export default {
   name: 'PostList',
   setup() {
-    const posts: Ref<PostMeta[]> = ref([])
-    const hoveredPost: Ref<PostMeta | null> = ref(null)
+    const hoveredPost: Ref<Post | null> = ref(null)
+    const route = useRoute()
 
-    onMounted(async () => {
-      const res = await fetch('/api/blog-posts')
-      posts.value = await res.json()
+    const posts = computed(() => {
+      const topic = route.query.topic as string
+      return topic ? getPosts().filter(post => post.category === topic) : getPosts()
     })
 
     return { posts, hoveredPost }

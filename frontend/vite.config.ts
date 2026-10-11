@@ -12,12 +12,14 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@content': fileURLToPath(new URL('../content', import.meta.url))
     },
   },
   server: {
-    proxy: {
-      '/api': 'http://localhost:3000'
+    fs: {
+      // Posts live in ../content, outside the Vite root.
+      allow: ['..']
     }
   }
 })

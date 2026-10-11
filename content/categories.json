@@ -1,0 +1,16 @@
+{
+  "categories": [
+    { "slug": "misc", "name": "Misc" },
+    { "slug": "education", "name": "Education" },
+    { "slug": "philosophy", "name": "Philosophy" },
+    { "slug": "faith", "name": "Christianity/Faith" },
+    { "slug": "creative-writing", "name": "Poetry/Creative Writing" }
+  ],
+  "default": "misc",
+  "priority": ["faith", "philosophy", "education", "creative-writing", "misc"],
+  "tags": {
+    "philosophy": "philosophy",
+    "learning": "education",
+    "creative-writing": "creative-writing"
+  }
+}

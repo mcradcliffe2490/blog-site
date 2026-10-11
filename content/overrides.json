@@ -1,0 +1,8 @@
+{
+  "*": {
+    "imageNotes": { "default": "Once upon a time there was an image here." }
+  },
+  "i-got-claude-to-act-unethical-by": { "images": true },
+  "on-love-that-should-not-be": { "category": "creative-writing" },
+  "on-the-sorrow-that-leads-to-repentance": { "category": "faith" }
+}

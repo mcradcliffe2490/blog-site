@@ -1,0 +1,39 @@
+name: Sync content
+
+on:
+  schedule:
+    - cron: '17 11 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-content
+
+jobs:
+  substack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run sync
+      # Posts that synced cleanly are still committed when another one failed.
+      - name: Commit new and changed posts
+        if: always()
+        run: |
+          git add content/posts
+          if git diff --cached --quiet; then
+            echo "Nothing to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Sync posts from Substack"
+          git push

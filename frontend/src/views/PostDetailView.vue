@@ -1,14 +1,20 @@
 <script lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { marked } from 'marked'
+import { Marked } from 'marked'
+import markedFootnote from 'marked-footnote'
+import DOMPurify from 'dompurify'
+import { getPost, formatDate } from '../content/posts'
+import type { Post } from '../content/posts'
+
+const marked = new Marked(markedFootnote())
 
 export default {
   name: 'PostDetailView',
   setup() {
     const route = useRoute()
     const router = useRouter()
-    const post = ref<any>(null)
+    const post = ref<Post | null>(null)
     const html = ref('')
     const loading = ref(true)
     const error = ref('')
@@ -16,21 +22,18 @@ export default {
 
     const goBack = () => router.back()
 
-    onMounted(async () => {
-      try {
-        const res = await fetch(`/api/blog-posts/${route.params.slug}`)
-        if (!res.ok) throw new Error('Post not found')
-        post.value = await res.json()
-        html.value = marked.parse(post.value.markdown || '') as string
+    onMounted(() => {
+      post.value = getPost(route.params.slug as string) ?? null
+      if (post.value) {
+        html.value = DOMPurify.sanitize(marked.parse(post.value.markdown) as string)
         setTimeout(() => { showContent.value = true }, 100) // fade in
-      } catch (e: any) {
-        error.value = e.message
-      } finally {
-        loading.value = false
+      } else {
+        error.value = 'Post not found'
       }
+      loading.value = false
     })
 
-    return { post, html, loading, error, showContent, goBack }
+    return { post, html, loading, error, showContent, goBack, formatDate }
   }
 }
 </script>
@@ -44,9 +47,9 @@ export default {
       <div v-if="loading" class="fade-content">Loading...</div>
       <div v-else-if="error" class="fade-content">{{ error }}</div>
       <div v-else-if="post && showContent" class="fade-content">
+        <h1 class="post-title">{{ post.title }}</h1>
         <div class="post-meta">
-          <span v-if="post.date">{{ post.date }}</span>
-          <span v-if="post.summary">&mdash; {{ post.summary }}</span>
+          <span v-if="post.date">{{ formatDate(post.date) }}</span>
         </div>
         <div class="post-content" v-html="html"></div>
       </div>
@@ -128,6 +131,24 @@ export default {
 }
 .post-content :deep(p) {
   margin: 1.2rem 0;
+}
+.post-content :deep(.footnotes) {
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 2px solid var(--color-border);
+  font-size: 1rem;
+}
+.post-content :deep(.sr-only) {
+  display: none;
+}
+.post-content :deep(.image-note) {
+  font-size: 1rem;
+  opacity: 0.5;
+  text-align: center;
+}
+.post-content :deep(img) {
+  max-width: 100%;
+  height: auto;
 }
 .post-content :deep(pre) {
   background: var(--color-background-mute);

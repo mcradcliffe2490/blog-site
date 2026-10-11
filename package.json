@@ -1,7 +1,16 @@
 {
+  "name": "blog-site-content",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "sync": "node scripts/sync-substack.mjs",
+    "test": "node --test scripts/*.test.mjs"
+  },
   "dependencies": {
-    "dotenv": "^17.2.0",
-    "gray-matter": "^4.0.3",
-    "openai": "^5.9.0"
+    "turndown": "^7.2.0",
+    "yaml": "^2.8.0"
   }
 }
