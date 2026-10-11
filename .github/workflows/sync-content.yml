@@ -1,8 +1,8 @@
 name: Sync content
 
+# Manual only: Substack blocks GitHub's servers (every request gets a 403), so
+# the daily run happens on a Mac instead. See README.md.
 on:
-  schedule:
-    - cron: '17 11 * * *'
   workflow_dispatch:
 
 permissions:

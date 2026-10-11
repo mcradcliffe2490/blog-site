@@ -4,11 +4,53 @@ This is a blog. Posts are written on [Substack](https://mcradcliffe.substack.com
 
 ## How posts get here
 
-1. `.github/workflows/sync-content.yml` runs once a day, or on demand from the Actions tab ("Run workflow").
+1. `scripts/sync-and-push.sh` runs once a day on my Mac.
 2. It runs `npm run sync`, which reads every public post from Substack and writes one markdown file per post into `content/posts/`.
-3. It commits any new or changed files. The site in `frontend/` reads those files when it builds.
+3. It commits and pushes any new or changed files. The site in `frontend/` reads those files when it builds.
 
 There is no server. If Substack or the sync breaks, the site keeps the posts it already has.
+
+It runs on a Mac because Substack blocks GitHub's servers: `.github/workflows/sync-content.yml` does the same job as a GitHub Action, but every request it makes gets a 403. It is kept with a manual button only, in case that changes.
+
+### The daily job
+
+The schedule is a macOS launchd job. To install it, save this as `~/Library/LaunchAgents/com.mcradcliffe.blog-site-sync.plist`, with the path changed if the repo has moved:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.mcradcliffe.blog-site-sync</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/mcradcliffe/Developer/Github/blog-site/scripts/sync-and-push.sh</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>9</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>/Users/mcradcliffe/Library/Logs/blog-site-sync.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/mcradcliffe/Library/Logs/blog-site-sync.log</string>
+</dict>
+</plist>
+```
+
+Then:
+
+```
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.mcradcliffe.blog-site-sync.plist   # turn on
+launchctl kickstart gui/$(id -u)/com.mcradcliffe.blog-site-sync                                # run now
+launchctl bootout gui/$(id -u)/com.mcradcliffe.blog-site-sync                                  # turn off
+```
+
+It runs at 9am, or when the Mac next wakes if it was asleep. It only commits on `master`, writes to `~/Library/Logs/blog-site-sync.log`, and shows a notification if it fails. The repo must stay outside `Documents`, `Desktop` and `Downloads`, which macOS does not let background jobs read.
 
 ## Two folders, two installs
 
@@ -72,9 +114,13 @@ The post.
 
 ## When the sync breaks
 
-- Look at the failed run in the Actions tab. Each failing post is listed with the reason.
-- Run `npm run sync` locally. If that works and the Action does not, Substack is probably blocking GitHub's servers; run it locally and commit the result.
+- Read `~/Library/Logs/blog-site-sync.log`. Each failing post is listed with the reason.
+- Run `./scripts/sync-and-push.sh` by hand to see the same thing in a terminal.
 - The script uses two unofficial Substack endpoints, `/api/v1/archive` and `/api/v1/posts/<slug>`. If Substack changes them, `scripts/sync-substack.mjs` is the only file that knows about them.
 - "Less than half the size of the saved one" means Substack returned a much shorter post than before. The file was left alone. If the cut was intentional, delete the file and sync again.
-- GitHub pauses scheduled workflows in repos with no activity for 60 days. If posts stop arriving, check that the workflow is still enabled.
+- If posts stop arriving with no notification, check the job is still installed: `launchctl print gui/$(id -u)/com.mcradcliffe.blog-site-sync`.
 - Before pushing your own changes, `git pull --rebase`, since the sync commits to the same branch.
+
+---
+
+Phil wuz here.
