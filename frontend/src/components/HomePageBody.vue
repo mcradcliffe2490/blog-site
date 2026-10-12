@@ -1,6 +1,6 @@
 <template>
   <div class="blog-message">
-    This is a blog.
+    <slot>This is a blog.</slot>
   </div>
 </template>
 

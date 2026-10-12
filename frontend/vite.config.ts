@@ -6,6 +6,8 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // The deploy sets this while the site lives at <user>.github.io/blog-site/.
+  base: process.env.BASE_PATH || '/',
   plugins: [
     vue(),
     vueDevTools(),

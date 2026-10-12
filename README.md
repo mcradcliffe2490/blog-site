@@ -52,6 +52,12 @@ launchctl bootout gui/$(id -u)/com.mcradcliffe.blog-site-sync                   
 
 It runs at 9am, or when the Mac next wakes if it was asleep. It only commits on `master`, writes to `~/Library/Logs/blog-site-sync.log`, and shows a notification if it fails. The repo must stay outside `Documents`, `Desktop` and `Downloads`, which macOS does not let background jobs read.
 
+## Where it is hosted
+
+GitHub Pages, at https://mcradcliffe2490.github.io/blog-site/. `.github/workflows/deploy.yml` builds `frontend/` and publishes it on every push to `master`, including the daily sync's pushes.
+
+To move to a custom domain: add the DNS records GitHub asks for, set the domain under Settings → Pages, and remove the `BASE_PATH` line from `deploy.yml`.
+
 ## Two folders, two installs
 
 | Where | What | Commands |
